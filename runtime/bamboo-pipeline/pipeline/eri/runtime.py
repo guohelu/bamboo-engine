@@ -352,6 +352,12 @@ class BambooDjangoRuntime(
                     final_references[cv.key] = set()
                     context_var_references[cv.key] = Template(cv.value).get_reference()
 
+            elif act["type"] == NodeType.SubCanvas.value:
+                # node
+                nodes.append(
+                    self._gen_subproc_node(subproc=act, pipeline=pipeline, root_id=root_id, parent_id=parent_id)
+                )
+
             elif act["type"] == NodeType.SubProcess.value:
                 # node
                 nodes.append(

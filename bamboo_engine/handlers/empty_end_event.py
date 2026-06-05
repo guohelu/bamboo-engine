@@ -131,6 +131,16 @@ class EmptyEndEventHandler(NodeHandler):
             outputs[self.LOOP_KEY] = subproc_state.loop + Settings.RERUN_INDEX_OFFSET
             outputs[self.INNER_LOOP_KEY] = subproc_state.inner_loop + Settings.RERUN_INDEX_OFFSET
 
+            # 为循环场景打包当前循环的输出，供 extract_outputs 使用
+            # 支持 SubProcess 和 SubCanvas 节点的循环
+            node = self.runtime.get_node(pipeline_id)
+            if getattr(node, "loop_enabled", False) or getattr(node, "loop_times", None) is not None:
+                loop_outputs = {}
+                for origin_key, target_key in self.runtime.get_data_outputs(pipeline_id).items():
+                    if origin_key in outputs:
+                        loop_outputs[target_key] = outputs[origin_key]
+                outputs[Settings.LOOP_OUTPUTS_INNER_KEY] = loop_outputs
+
         with metrics.observe(
             metrics.ENGINE_NODE_EXECUTE_POST_PROCESS_DURATION, type=self.node.type.value, hostname=self._hostname
         ):
@@ -169,6 +179,37 @@ class EmptyEndEventHandler(NodeHandler):
 
             # subprocess finish
             subprocess = self.runtime.get_node(pipeline_id)
+
+            # 检查是否为子画布且需要继续循环
+            # 如果子画布节点开启了循环且当前 inner_loop 未达到循环次数上限
+            # 则返回子画布节点 ID，触发下一次循环
+            if subprocess.type == NodeType.SubCanvas:
+                # 获取当前子画布节点的状态和配置
+                subcanvas_state = self.runtime.get_state(pipeline_id)
+                current_inner_loop = subcanvas_state.inner_loop if subcanvas_state else inner_loop
+
+                # 判断是否需要继续循环
+                if getattr(subprocess, "loop_enabled", False) and subprocess.should_continue_loop(current_inner_loop):
+                    logger.info(
+                        "root_pipeline[%s] subcanvas(%s) loop continue, inner_loop: %s, loop_times: %s",
+                        root_pipeline_id,
+                        pipeline_id,
+                        current_inner_loop,
+                        subprocess.loop_times,
+                    )
+                    # 返回子画布节点自身，触发下一次循环
+                    # 需要先将 pipeline_id 压回 stack，因为前面已经 pop 了
+                    process_info.pipeline_stack.append(pipeline_id)
+                    self.runtime.set_pipeline_stack(process_info.process_id, process_info.pipeline_stack)
+
+                    return ExecuteResult(
+                        should_sleep=False,
+                        schedule_ready=False,
+                        schedule_type=None,
+                        schedule_after=-1,
+                        dispatch_processes=[],
+                        next_node_id=pipeline_id,  # 返回子画布节点自身，重新执行
+                    )
 
             # extract subprocess outputs to parent context
             subprocess_outputs = self.runtime.get_data_outputs(pipeline_id)

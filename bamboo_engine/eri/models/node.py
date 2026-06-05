@@ -24,6 +24,7 @@ class NodeType(Enum):
 
     ServiceActivity = "ServiceActivity"
     SubProcess = "SubProcess"
+    SubCanvas = "SubCanvas"
     ExclusiveGateway = "ExclusiveGateway"
     ParallelGateway = "ParallelGateway"
     ConditionalParallelGateway = "ConditionalParallelGateway"
@@ -43,6 +44,7 @@ class LoopControlConfig(Representable):
         retryable: bool = False,
         skippable: bool = False,
         outputs_key: str = DEFAULT_OUTPUTS_KEY,
+        loop_params: Optional[dict] = None,
     ):
         """
         :param loop_times: 循环次数上限
@@ -50,12 +52,14 @@ class LoopControlConfig(Representable):
         :param retryable: 是否允许循环重试
         :param skippable: 是否允许循环跳过
         :param outputs_key: 循环聚合输出在上下文中的 key
+        :param loop_params: 循环参数配置，用于循环执行时传入不同参数
         """
         self.loop_times = loop_times
         self.fail_skip = fail_skip
         self.retryable = retryable
         self.skippable = skippable
         self.outputs_key = outputs_key
+        self.loop_params = loop_params or {}
 
     def should_continue_loop(self, inner_loop: int) -> bool:
         """是否还需要继续循环（仅基于循环配置自身）"""
@@ -324,6 +328,23 @@ class SubProcess(Node):
         """
 
         :param start_event_id: 子流程开始节点 ID
+        :type start_event_id: str
+        """
+        super().__init__(*args, **kwargs)
+        self.start_event_id = start_event_id
+
+
+class SubCanvas(Node):
+    """
+    子画布
+
+    子画布是一种轻量级的子流程，共享父流程的上下文
+    """
+
+    def __init__(self, start_event_id: str, *args, **kwargs):
+        """
+
+        :param start_event_id: 子画布开始节点 ID
         :type start_event_id: str
         """
         super().__init__(*args, **kwargs)

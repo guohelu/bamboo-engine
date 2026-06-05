@@ -11,51 +11,38 @@ an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express o
 specific language governing permissions and limitations under the License.
 """
 
-from bamboo_engine.eri import NodeType
+from pipeline.core.flow import FlowNodeClsFactory
 
 MAX_IN = 1000
 MAX_OUT = 1000
-FLOW_NODES_WITHOUT_STARTEVENT = [
-    NodeType.ServiceActivity.value,
-    NodeType.SubProcess.value,
-    NodeType.EmptyEndEvent.value,
-    NodeType.ParallelGateway.value,
-    NodeType.ConditionalParallelGateway.value,
-    NodeType.ExclusiveGateway.value,
-    NodeType.ConvergeGateway.value,
-]
 
-FLOW_NODES_WITHOUT_START_AND_END = [
-    NodeType.ServiceActivity.value,
-    NodeType.SubProcess.value,
-    NodeType.ParallelGateway.value,
-    NodeType.ConditionalParallelGateway.value,
-    NodeType.ExclusiveGateway.value,
-    NodeType.ConvergeGateway.value,
-]
+
+def get_flow_nodes_without_start_event():
+    """动态获取不包含开始事件的节点类型列表"""
+    return FlowNodeClsFactory.node_types_without_start_event()
+
+
+def get_flow_nodes_without_start_end_event():
+    """动态获取不包含开始和结束事件的节点类型列表"""
+    return FlowNodeClsFactory.node_types_without_start_end_event()
+
 
 SOURCE_RULE = {
     "min_in": 0,
     "max_in": 0,
     "min_out": 1,
     "max_out": 1,
-    "allowed_out": FLOW_NODES_WITHOUT_START_AND_END,
+    "allowed_out": get_flow_nodes_without_start_end_event(),
 }
 
-SINK_RULE = {
-    "min_in": 1,
-    "max_in": MAX_IN,
-    "min_out": 0,
-    "max_out": 0,
-    "allowed_out": [],
-}
+SINK_RULE = {"min_in": 1, "max_in": MAX_IN, "min_out": 0, "max_out": 0, "allowed_out": []}
 
 ACTIVITY_RULE = {
     "min_in": 1,
     "max_in": MAX_IN,
     "min_out": 1,
     "max_out": 1,
-    "allowed_out": FLOW_NODES_WITHOUT_STARTEVENT,
+    "allowed_out": get_flow_nodes_without_start_event(),
 }
 
 EMIT_RULE = {
@@ -63,7 +50,7 @@ EMIT_RULE = {
     "max_in": MAX_IN,
     "min_out": 1,
     "max_out": MAX_OUT,
-    "allowed_out": FLOW_NODES_WITHOUT_STARTEVENT,
+    "allowed_out": get_flow_nodes_without_start_event(),
 }
 
 CONVERGE_RULE = {
@@ -71,17 +58,18 @@ CONVERGE_RULE = {
     "max_in": MAX_IN,
     "min_out": 1,
     "max_out": 1,
-    "allowed_out": FLOW_NODES_WITHOUT_STARTEVENT,
+    "allowed_out": get_flow_nodes_without_start_event(),
 }
 
 # rules of activity graph
 NODE_RULES = {
-    NodeType.EmptyStartEvent.value: SOURCE_RULE,
-    NodeType.EmptyEndEvent.value: SINK_RULE,
-    NodeType.ServiceActivity.value: ACTIVITY_RULE,
-    NodeType.ExclusiveGateway.value: EMIT_RULE,
-    NodeType.ParallelGateway.value: EMIT_RULE,
-    NodeType.ConditionalParallelGateway.value: EMIT_RULE,
-    NodeType.ConvergeGateway.value: CONVERGE_RULE,
-    NodeType.SubProcess.value: ACTIVITY_RULE,
+    "EmptyStartEvent": SOURCE_RULE,
+    "EmptyEndEvent": SINK_RULE,
+    "ServiceActivity": ACTIVITY_RULE,
+    "ExclusiveGateway": EMIT_RULE,
+    "ParallelGateway": EMIT_RULE,
+    "ConditionalParallelGateway": EMIT_RULE,
+    "ConvergeGateway": CONVERGE_RULE,
+    "SubProcess": ACTIVITY_RULE,
+    "SubCanvas": ACTIVITY_RULE,
 }

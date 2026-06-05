@@ -15,11 +15,25 @@ from pipeline.core.flow import FlowNodeClsFactory
 
 MAX_IN = 1000
 MAX_OUT = 1000
-FLOW_NODES_WITHOUT_STARTEVENT = FlowNodeClsFactory.node_types_without_start_event()
 
-FLOW_NODES_WITHOUT_START_AND_END = FlowNodeClsFactory.node_types_without_start_end_event()
 
-SOURCE_RULE = {"min_in": 0, "max_in": 0, "min_out": 1, "max_out": 1, "allowed_out": FLOW_NODES_WITHOUT_START_AND_END}
+def get_flow_nodes_without_start_event():
+    """动态获取不包含开始事件的节点类型列表"""
+    return FlowNodeClsFactory.node_types_without_start_event()
+
+
+def get_flow_nodes_without_start_end_event():
+    """动态获取不包含开始和结束事件的节点类型列表"""
+    return FlowNodeClsFactory.node_types_without_start_end_event()
+
+
+SOURCE_RULE = {
+    "min_in": 0,
+    "max_in": 0,
+    "min_out": 1,
+    "max_out": 1,
+    "allowed_out": get_flow_nodes_without_start_end_event(),
+}
 
 SINK_RULE = {"min_in": 1, "max_in": MAX_IN, "min_out": 0, "max_out": 0, "allowed_out": []}
 
@@ -28,7 +42,7 @@ ACTIVITY_RULE = {
     "max_in": MAX_IN,
     "min_out": 1,
     "max_out": 1,
-    "allowed_out": FLOW_NODES_WITHOUT_STARTEVENT,
+    "allowed_out": get_flow_nodes_without_start_event(),
 }
 
 EMIT_RULE = {
@@ -36,7 +50,7 @@ EMIT_RULE = {
     "max_in": MAX_IN,
     "min_out": 1,
     "max_out": MAX_OUT,
-    "allowed_out": FLOW_NODES_WITHOUT_STARTEVENT,
+    "allowed_out": get_flow_nodes_without_start_event(),
 }
 
 CONVERGE_RULE = {
@@ -44,7 +58,7 @@ CONVERGE_RULE = {
     "max_in": MAX_IN,
     "min_out": 1,
     "max_out": 1,
-    "allowed_out": FLOW_NODES_WITHOUT_STARTEVENT,
+    "allowed_out": get_flow_nodes_without_start_event(),
 }
 
 # rules of activity graph
@@ -57,4 +71,5 @@ NODE_RULES = {
     "ConditionalParallelGateway": EMIT_RULE,
     "ConvergeGateway": CONVERGE_RULE,
     "SubProcess": ACTIVITY_RULE,
+    "SubCanvas": ACTIVITY_RULE,
 }
